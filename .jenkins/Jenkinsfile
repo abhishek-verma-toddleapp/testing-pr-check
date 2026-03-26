@@ -2,7 +2,12 @@ pipeline {
     agent any
 
     triggers {
-        githubPush()
+        githubPullRequests(
+            triggerMode: 'HEAVY_HOOKS',
+            events: [Open(), Reopened()],
+            branchRestriction: null,
+            cancelQueued: true
+        )
     }
 
     environment {
@@ -29,6 +34,19 @@ pipeline {
             steps {
                 echo 'Deploying repo-a to staging...'
             }
+        }
+    }
+
+    post {
+        success {
+            githubNotify status: 'SUCCESS',
+                         description: 'PR checks passed',
+                         context: 'jenkins/pr-check'
+        }
+        failure {
+            githubNotify status: 'FAILURE',
+                         description: 'PR checks failed',
+                         context: 'jenkins/pr-check'
         }
     }
 }
