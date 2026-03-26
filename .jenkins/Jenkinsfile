@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    triggers {
+        githubPush()
+    }
+
+    environment {
+        WEBHOOK_SECRET = credentials('github-secret-repo-a')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build repo-a') {
+            steps {
+                echo 'Building repo-a...'
+            }
+        }
+        stage('Test repo-a') {
+            steps {
+                echo 'Testing repo-a...'
+            }
+        }
+        stage('Deploy repo-a') {
+            steps {
+                echo 'Deploying repo-a to staging...'
+            }
+        }
+    }
+}
