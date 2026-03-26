@@ -2,11 +2,22 @@ pipeline {
     agent any
 
     triggers {
-        githubPullRequests(
-            triggerMode: 'HEAVY_HOOKS',
-            events: [Open(), Reopened()],
-            branchRestriction: null,
-            cancelQueued: true
+        GenericTrigger(
+            genericVariables: [
+                [key: 'PR_ACTION', value: '$.action'],
+                [key: 'PR_NUMBER', value: '$.number'],
+                [key: 'PR_TITLE', value: '$.pull_request.title'],
+                [key: 'PR_BRANCH', value: '$.pull_request.head.ref'],
+                [key: 'TARGET_BRANCH', value: '$.pull_request.base.ref'],
+                [key: 'REPO_NAME', value: '$.repository.full_name']
+            ],
+            token: 'pipeline-repo-a-pr-token',
+            causeString: 'PR #$PR_NUMBER - $PR_TITLE',
+            regexpFilterText: '$PR_ACTION',
+            regexpFilterExpression: '^(opened|reopened)$',
+            printContributedVariables: true,
+            printPostContent: false,
+            silentResponse: false
         )
     }
 
@@ -22,7 +33,8 @@ pipeline {
         }
         stage('Build repo-a') {
             steps {
-                echo 'Building repo-a...'
+                echo "Building PR #${PR_NUMBER}: ${PR_TITLE}"
+                echo "Branch: ${PR_BRANCH} → ${TARGET_BRANCH}"
             }
         }
         stage('Test repo-a') {
