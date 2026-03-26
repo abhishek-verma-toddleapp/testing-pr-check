@@ -9,12 +9,15 @@ pipeline {
                 [key: 'PR_TITLE', value: '$.pull_request.title'],
                 [key: 'PR_BRANCH', value: '$.pull_request.head.ref'],
                 [key: 'TARGET_BRANCH', value: '$.pull_request.base.ref'],
-                [key: 'REPO_NAME', value: '$.repository.full_name']
+                [key: 'REPO_NAME', value: '$.repository.full_name'],
+                [key: 'COMMIT_SHA', value: '$.pull_request.head.sha'],  // Important!
+                [key: 'REPO_OWNER', value: '$.repository.owner.login'],
+                [key: 'REPO_NAME_ONLY', value: '$.repository.name']
             ],
             token: 'pipeline-repo-a-pr-token',
             causeString: 'PR #$PR_NUMBER - $PR_TITLE',
             regexpFilterText: '$PR_ACTION',
-            regexpFilterExpression: '^(opened|reopened)$',
+            regexpFilterExpression: '^(opened|reopened|synchronize)$',
             printContributedVariables: true,
             printPostContent: false,
             silentResponse: false
@@ -23,29 +26,88 @@ pipeline {
 
     environment {
         WEBHOOK_SECRET = credentials('github-secret-repo-a')
+        GITHUB_TOKEN = credentials('github-pat-token')
     }
 
     stages {
+        stage('Set Pending Status') {
+            steps {
+                script {
+                    setGitHubStatus('pending', 'Build in progress...')
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        stage('Build repo-a') {
+
+        stage('Build') {
             steps {
                 echo "Building PR #${PR_NUMBER}: ${PR_TITLE}"
                 echo "Branch: ${PR_BRANCH} → ${TARGET_BRANCH}"
+                // Your build commands here
+                sh 'echo "Building..."'
             }
         }
-        stage('Test repo-a') {
+
+        stage('Test') {
             steps {
-                echo 'Testing repo-a...'
+                echo 'Running tests...'
+                // Your test commands here
+                sh 'echo "Testing..."'
             }
         }
-        stage('Deploy repo-a') {
+
+        stage('Deploy to Staging') {
             steps {
-                echo 'Deploying repo-a to staging...'
+                echo 'Deploying to staging...'
+                // Your deploy commands here
             }
         }
     }
+
+    post {
+        success {
+            script {
+                setGitHubStatus('success', 'All checks passed!')
+            }
+        }
+        failure {
+            script {
+                setGitHubStatus('failure', 'Build failed')
+            }
+        }
+        unstable {
+            script {
+                setGitHubStatus('failure', 'Build unstable')
+            }
+        }
+        aborted {
+            script {
+                setGitHubStatus('error', 'Build aborted')
+            }
+        }
+    }
+}
+
+// Function to set GitHub commit status
+def setGitHubStatus(String state, String description) {
+    def context = 'jenkins/pr-build'
+    def targetUrl = "${BUILD_URL}"
+    
+    sh """
+        curl -s -X POST \
+            -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME_ONLY}/statuses/${COMMIT_SHA} \
+            -d '{
+                "state": "${state}",
+                "target_url": "${targetUrl}",
+                "description": "${description}",
+                "context": "${context}"
+            }'
+    """
 }
