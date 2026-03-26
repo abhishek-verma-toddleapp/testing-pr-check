@@ -48,17 +48,4 @@ pipeline {
             }
         }
     }
-
-    post {
-        success {
-            githubNotify status: 'SUCCESS',
-                         description: 'PR checks passed',
-                         context: 'jenkins/pr-check'
-        }
-        failure {
-            githubNotify status: 'FAILURE',
-                         description: 'PR checks failed',
-                         context: 'jenkins/pr-check'
-        }
-    }
 }
