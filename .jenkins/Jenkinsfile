@@ -57,6 +57,7 @@ pipeline {
             steps {
                 echo 'Running tests...'
                 // Your test commands here
+                error("Simulated test failure!")   // <-- THIS WILL FORCE FAIL
                 sh 'echo "Testing..."'
             }
         }
