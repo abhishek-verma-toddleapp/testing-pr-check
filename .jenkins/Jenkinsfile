@@ -14,7 +14,7 @@ pipeline {
                 [key: 'REPO_OWNER', value: '$.repository.owner.login'],
                 [key: 'REPO_NAME_ONLY', value: '$.repository.name']
             ],
-            token: 'pipeline-repo-a-pr-token',
+            token: 'pipeline-repo-a-pr-tokenn',
             causeString: 'PR #$PR_NUMBER - $PR_TITLE',
             regexpFilterText: '$PR_ACTION',
             regexpFilterExpression: '^(opened|reopened|synchronize)$',
